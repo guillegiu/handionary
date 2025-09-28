@@ -8,7 +8,6 @@ const Camera = () => {
   const [isHandDetected, setIsHandDetected] = useState(false);
   const [trackingQuality, setTrackingQuality] = useState(0);
   const [handCount, setHandCount] = useState(0);
-  const [debugInfo, setDebugInfo] = useState('Inicializando...');
   const [cameraError, setCameraError] = useState<string | null>(null);
   
   // Función para verificar disponibilidad de cámara
@@ -84,13 +83,13 @@ const Camera = () => {
       
       handsData.push(handData);
       
-      // Solo enviar al lienzo si hay pinza y el dibujo está habilitado
-      if (isPinching && canDraw && window.drawFromCamera) {
-        window.drawFromCamera(indexPosition.x, indexPosition.y, handIndex);
-      } else if (!isPinching && window.resetDrawing) {
-        // Resetear el dibujo cuando no hay pinza para evitar conexiones no deseadas
-        window.resetDrawing(handIndex);
-      }
+          // Solo enviar al lienzo si hay pinza y el dibujo está habilitado
+          if (isPinching && canDraw && (window as any).drawFromCamera) {
+            (window as any).drawFromCamera(indexPosition.x, indexPosition.y, handIndex);
+          } else if (!isPinching && (window as any).resetDrawing) {
+            // Resetear el dibujo cuando no hay pinza para evitar conexiones no deseadas
+            (window as any).resetDrawing(handIndex);
+          }
     });
     
     // Actualizar el store con los datos de las manos
@@ -104,23 +103,18 @@ const Camera = () => {
 
     const initMediaPipe = async () => {
       try {
-        setDebugInfo('Verificando cámara...');
         
         // Verificar disponibilidad de cámara primero
         const hasCamera = await checkCameraAvailability();
         if (!hasCamera) {
-          setDebugInfo('No hay cámaras disponibles');
+          setCameraError('No hay cámaras disponibles');
           return;
         }
-        
-        setDebugInfo('Importando MediaPipe...');
         
         // Importar MediaPipe dinámicamente
         const { Hands } = await import('@mediapipe/hands');
         const { Camera } = await import('@mediapipe/camera_utils');
         const { drawConnectors, drawLandmarks } = await import('@mediapipe/drawing_utils');
-
-        setDebugInfo('Creando instancia de Hands...');
         
         hands = new Hands({
           locateFile: (file: string) => {
@@ -135,7 +129,6 @@ const Camera = () => {
           minTrackingConfidence: 0.5
         });
 
-        setDebugInfo('Configurando onResults...');
 
         hands.onResults((results: any) => {
           console.log('MediaPipe results:', results);
@@ -145,9 +138,8 @@ const Camera = () => {
               ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
               
               // Verificar si hay manos detectadas
-              if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                console.log('Manos detectadas:', results.multiHandLandmarks.length);
-                setDebugInfo(`${results.multiHandLandmarks.length} manos detectadas`);
+                  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    console.log('Manos detectadas:', results.multiHandLandmarks.length);
                 
                 processHands(results.multiHandLandmarks);
                 
@@ -194,9 +186,8 @@ const Camera = () => {
                     });
                   });
                 });
-              } else {
-                console.log('No se detectaron manos');
-                setDebugInfo('No se detectaron manos');
+                  } else {
+                    console.log('No se detectaron manos');
                 setIsHandDetected(false);
                 setHandCount(0);
                 setTrackingQuality(0);
@@ -207,7 +198,6 @@ const Camera = () => {
           }
         });
 
-        setDebugInfo('Iniciando cámara...');
 
         if (videoRef.current) {
           try {
@@ -223,11 +213,10 @@ const Camera = () => {
             
             // Intentar iniciar la cámara con manejo de errores
             await camera.start();
-            setDebugInfo('Cámara iniciada - Esperando manos...');
             console.log('Cámara iniciada correctamente');
-          } catch (cameraError) {
-            console.error('Error al iniciar la cámara:', cameraError);
-            setDebugInfo(`Error de cámara: ${cameraError.message}`);
+                } catch (cameraError) {
+                  console.error('Error al iniciar la cámara:', cameraError);
+                  setCameraError(`Error de cámara: ${(cameraError as Error).message}`);
             
             // Intentar con permisos de usuario
             try {
@@ -246,7 +235,7 @@ const Camera = () => {
               }
             } catch (userMediaError) {
               console.error('Error con getUserMedia:', userMediaError);
-              setDebugInfo(`Error de permisos: ${userMediaError.message}`);
+              setCameraError(`Error de permisos: ${(userMediaError as Error).message}`);
             }
           }
         } else {
@@ -255,7 +244,7 @@ const Camera = () => {
         }
       } catch (error) {
         console.error('Error initializing MediaPipe:', error);
-        setDebugInfo(`Error: ${error.message}`);
+        setCameraError(`Error: ${(error as Error).message}`);
       }
     };
 

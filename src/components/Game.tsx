@@ -6,28 +6,38 @@ import Canvas from './Canvas';
 const Game = () => {
   const { 
     gamePhase, 
-    timeLeft, 
-    countdownNumber, 
     canDraw,
     selectedTime,
     finalDrawing,
+    currentPlayer,
+    players,
+    currentRound,
+    totalRounds,
     setGamePhase, 
-    setTimeLeft, 
-    setCountdownNumber, 
     setCanDraw,
-    resetGame 
+    setCurrentPlayer,
+    nextPlayer,
+    saveDrawing
   } = useGameStore();
 
   const [localCountdown, setLocalCountdown] = useState(3);
   const [localTimeLeft, setLocalTimeLeft] = useState(selectedTime);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const gameIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<number | null>(null);
+  const gameIntervalRef = useRef<number | null>(null);
 
   // Actualizar localTimeLeft cuando cambie selectedTime
   useEffect(() => {
     console.log('selectedTime cambió a:', selectedTime);
     setLocalTimeLeft(selectedTime);
   }, [selectedTime]);
+
+  // Inicializar el primer jugador cuando comience el juego
+  useEffect(() => {
+    if (gamePhase === 'countdown' && players.length > 0 && !currentPlayer) {
+      console.log('Inicializando primer jugador:', players[0]);
+      setCurrentPlayer(players[0]);
+    }
+  }, [gamePhase, players, currentPlayer, setCurrentPlayer]);
 
   // Efecto para manejar el countdown de 3-2-1
   useEffect(() => {
@@ -114,13 +124,38 @@ const Game = () => {
     };
   }, [gamePhase]);
 
-  const handleReset = () => {
-    resetGame();
+  const handleNextPlayer = () => {
+    console.log('Avanzando al siguiente jugador...');
+    
+    // Guardar el dibujo actual si existe
+    if (finalDrawing) {
+      saveDrawing(finalDrawing);
+    }
+    
+    // Avanzar al siguiente jugador
+    nextPlayer();
+    
+    // Reiniciar el juego para el siguiente jugador
+    setGamePhase('countdown');
+    setLocalCountdown(3);
+    setLocalTimeLeft(selectedTime);
+    setCanDraw(false);
   };
 
   const renderCountdown = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
       <div className="text-center">
+        {currentPlayer && (
+          <div className="mb-8 p-6 bg-white rounded-2xl shadow-lg border border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              🎨 {currentPlayer.name}
+            </h2>
+            <p className="text-lg text-gray-600">
+              Equipo {currentPlayer.team} - Ronda {currentRound} de {totalRounds}
+            </p>
+          </div>
+        )}
+        
         <div className="text-9xl font-bold text-gray-800 mb-8 animate-pulse">
           {localCountdown}
         </div>
@@ -135,9 +170,9 @@ const Game = () => {
 
   const renderDrawing = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      {/* Header con timer */}
+      {/* Header con timer y jugador actual */}
       <div className="text-center mb-4">
-        <div className="inline-block bg-white rounded-full px-8 py-4 shadow-lg border border-gray-200">
+        <div className="inline-block bg-white rounded-full px-8 py-4 shadow-lg border border-gray-200 mb-4">
           <div className="text-4xl font-bold text-red-600 mb-2">
             {localTimeLeft}s
           </div>
@@ -145,6 +180,17 @@ const Game = () => {
             Tiempo restante
           </div>
         </div>
+        
+        {currentPlayer && (
+          <div className="inline-block bg-white rounded-2xl px-6 py-4 shadow-lg border border-gray-200">
+            <div className="text-xl font-bold text-gray-800 mb-1">
+              🎨 Está dibujando: {currentPlayer.name}
+            </div>
+            <div className="text-sm text-gray-600">
+              Equipo {currentPlayer.team} - Ronda {currentRound} de {totalRounds}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Layout principal */}
@@ -188,14 +234,16 @@ const Game = () => {
         
         {/* Mostrar el dibujo final guardado */}
         <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-200 mb-8">
-          {/* Debug temporal */}
-          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
-            <strong>Debug:</strong> finalDrawing = {finalDrawing ? `Presente (${finalDrawing.length} caracteres)` : 'null/undefined'}
-            <br />
-            <strong>Tipo:</strong> {typeof finalDrawing}
-            <br />
-            <strong>Primeros 50 chars:</strong> {finalDrawing ? finalDrawing.substring(0, 50) + '...' : 'N/A'}
-          </div>
+          {currentPlayer && (
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                🎨 Dibujo de {currentPlayer.name}
+              </h3>
+              <p className="text-sm text-blue-600">
+                Equipo {currentPlayer.team} - Ronda {currentRound} de {totalRounds}
+              </p>
+            </div>
+          )}
           
           {finalDrawing ? (
             <div className="flex justify-center">
@@ -217,6 +265,16 @@ const Game = () => {
               </div>
             </div>
           )}
+        </div>
+        
+        {/* Botón para avanzar al siguiente jugador */}
+        <div className="text-center">
+          <button
+            onClick={handleNextPlayer}
+            className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xl font-semibold rounded-full shadow-lg hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200"
+          >
+            ➡️ Siguiente Jugador
+          </button>
         </div>
       </div>
     </div>

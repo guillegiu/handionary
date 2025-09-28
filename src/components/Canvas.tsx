@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { currentColor, hands, canDraw, saveFinalDrawing } = useGameStore();
+  const { currentColor, hands, canDraw, saveFinalDrawing, saveDrawing } = useGameStore();
   const drawingStatesRef = useRef<Map<number, { isDrawing: boolean; lastPoint: { x: number; y: number } | null }>>(new Map());
   const drawingHistoryRef = useRef<Array<{x: number, y: number, color: string, handId: number}>>([]);
 

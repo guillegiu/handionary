@@ -24,7 +24,7 @@ export interface Drawing {
   timestamp: number;
 }
 
-export type GamePhase = 'waiting' | 'setup' | 'countdown' | 'drawing' | 'guessing' | 'roundFinished' | 'gameFinished';
+export type GamePhase = 'waiting' | 'setup' | 'countdown' | 'drawing' | 'guessing' | 'finished' | 'roundFinished' | 'gameFinished';
 
 export interface GameState {
   // Estados del juego
