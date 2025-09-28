@@ -127,40 +127,6 @@ const Canvas = () => {
     };
   }, [drawFromCamera, resetDrawing]);
 
-  // Redibujar solo el dibujo (sin puntos de tracking)
-  const redrawDrawing = useCallback(() => {
-    if (!canvasRef.current) return;
-
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    // Limpiar canvas
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-    // Redibujar todo el historial de dibujo
-    let currentHandId = -1;
-    let lastPoint: { x: number; y: number } | null = null;
-    
-    drawingHistoryRef.current.forEach((point) => {
-      if (point.handId !== currentHandId) {
-        // Nueva mano, resetear
-        currentHandId = point.handId;
-        lastPoint = { x: point.x, y: point.y };
-      } else if (lastPoint) {
-        // Misma mano, dibujar línea
-        ctx.beginPath();
-        ctx.moveTo(lastPoint.x, lastPoint.y);
-        ctx.lineTo(point.x, point.y);
-        ctx.strokeStyle = point.color;
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-        lastPoint = { x: point.x, y: point.y };
-      }
-    });
-    
-    console.log(`Redibujado con ${drawingHistoryRef.current.length} puntos del historial`);
-  }, []);
 
   // Redibujar todo el canvas (dibujo + puntitos de manos)
   const redrawCanvas = useCallback(() => {
