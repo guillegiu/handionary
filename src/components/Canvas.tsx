@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { currentColor, hands, canDraw, saveFinalDrawing, saveDrawing } = useGameStore();
+  const { currentColor, hands, canDraw, saveFinalDrawing } = useGameStore();
   const drawingStatesRef = useRef<Map<number, { isDrawing: boolean; lastPoint: { x: number; y: number } | null }>>(new Map());
   const drawingHistoryRef = useRef<Array<{x: number, y: number, color: string, handId: number}>>([]);
 
@@ -139,9 +139,9 @@ const Canvas = () => {
 
     // Redibujar todo el historial de dibujo
     let currentHandId = -1;
-    let lastPoint = null;
+    let lastPoint: { x: number; y: number } | null = null;
     
-    drawingHistoryRef.current.forEach((point, index) => {
+    drawingHistoryRef.current.forEach((point) => {
       if (point.handId !== currentHandId) {
         // Nueva mano, resetear
         currentHandId = point.handId;
@@ -258,11 +258,11 @@ const Canvas = () => {
   }, [canDraw, saveCanvasAsImage]);
 
   // Simular dibujo con el mouse para testing
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleMouseDown = useCallback(() => {
     // Mouse drawing disabled - only hand tracking
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleMouseMove = useCallback(() => {
     // Mouse drawing disabled - only hand tracking
   }, []);
 

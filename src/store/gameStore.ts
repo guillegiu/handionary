@@ -80,7 +80,7 @@ export interface GameActions {
   resetGame: () => void;
 }
 
-export const useGameStore = create<GameState & GameActions>((set, get) => ({
+export const useGameStore = create<GameState & GameActions>((set) => ({
   // Estados iniciales
   gamePhase: 'waiting',
   timeLeft: 60,

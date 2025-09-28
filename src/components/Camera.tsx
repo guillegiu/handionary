@@ -37,14 +37,12 @@ const Camera = () => {
       setTrackingQuality(0);
       updateHands([]);
       setActiveHands(0);
-      setDebugInfo('No se detectaron manos');
       return;
     }
 
     setIsHandDetected(true);
     setHandCount(landmarks.length);
     setActiveHands(landmarks.length);
-    setDebugInfo(`Detectadas ${landmarks.length} manos`);
     
     const handsData: any[] = [];
     
@@ -230,7 +228,6 @@ const Camera = () => {
               
               if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                setDebugInfo('Cámara iniciada con getUserMedia - Esperando manos...');
                 console.log('Cámara iniciada con getUserMedia');
               }
             } catch (userMediaError) {
@@ -239,7 +236,7 @@ const Camera = () => {
             }
           }
         } else {
-          setDebugInfo('Error: videoRef.current es null');
+          setCameraError('Error: videoRef.current es null');
           console.error('videoRef.current es null');
         }
       } catch (error) {

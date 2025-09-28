@@ -283,8 +283,6 @@ const Game = () => {
   // Debug: mostrar el estado actual
   console.log('Game state:', { 
     gamePhase, 
-    timeLeft, 
-    countdownNumber, 
     canDraw, 
     finalDrawing: finalDrawing ? `Presente (${finalDrawing.length} chars)` : 'Ausente',
     finalDrawingType: typeof finalDrawing
