@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './components/Home';
 import Game from './components/Game';
+import Gallery from './components/Gallery';
 import './App.css';
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />
         <Route path="/game" element={<Game />} />
+        <Route path="/gallery" element={<Gallery />} />
       </Routes>
     </Router>
   );

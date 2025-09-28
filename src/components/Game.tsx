@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { useNavigate } from 'react-router-dom';
 import Camera from './Camera';
 import Canvas from './Canvas';
 
@@ -19,6 +20,7 @@ const Game = () => {
     nextPlayer,
     saveDrawing
   } = useGameStore();
+  const navigate = useNavigate();
 
   const [localCountdown, setLocalCountdown] = useState(3);
   const [localTimeLeft, setLocalTimeLeft] = useState(selectedTime);
@@ -38,6 +40,17 @@ const Game = () => {
       setCurrentPlayer(players[0]);
     }
   }, [gamePhase, players, currentPlayer, setCurrentPlayer]);
+
+  // Navegar a la galería cuando el juego termine
+  useEffect(() => {
+    if (gamePhase === 'gameFinished') {
+      console.log('Juego terminado, navegando a la galería...');
+      // Pequeño delay para que se vea el último dibujo
+      setTimeout(() => {
+        navigate('/gallery');
+      }, 2000);
+    }
+  }, [gamePhase, navigate]);
 
   // Efecto para manejar el countdown de 3-2-1
   useEffect(() => {
@@ -296,6 +309,20 @@ const Game = () => {
       return renderDrawing();
     case 'finished':
       return renderFinished();
+    case 'gameFinished':
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-5xl font-bold text-gray-800 mb-4">
+              🎉 ¡Juego Terminado!
+            </h1>
+            <p className="text-xl text-gray-600 mb-8">
+              Redirigiendo a la galería de dibujos...
+            </p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          </div>
+        </div>
+      );
     default:
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">

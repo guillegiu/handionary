@@ -152,7 +152,11 @@ export const useGameStore = create<GameState & GameActions>((set) => ({
       : -1;
     
     const nextIndex = (currentIndex + 1) % allPlayers.length;
-    return { currentPlayer: allPlayers[nextIndex] };
+    const nextPlayer = allPlayers[nextIndex];
+    
+    return { 
+      currentPlayer: nextPlayer
+    };
   }),
   
   saveDrawing: (imageData) => set((state) => {
@@ -168,7 +172,17 @@ export const useGameStore = create<GameState & GameActions>((set) => ({
       timestamp: Date.now()
     };
     
-    return { drawings: [...state.drawings, newDrawing] };
+    const updatedDrawings = [...state.drawings, newDrawing];
+    
+    // Verificar si hemos completado todas las rondas
+    const allPlayers = [...state.teams.A, ...state.teams.B];
+    const totalDrawingsExpected = allPlayers.length * state.totalRounds;
+    const isGameComplete = updatedDrawings.length >= totalDrawingsExpected;
+    
+    return { 
+      drawings: updatedDrawings,
+      gamePhase: isGameComplete ? 'gameFinished' : state.gamePhase
+    };
   }),
   
   setTotalRounds: (rounds) => set({ totalRounds: rounds }),
