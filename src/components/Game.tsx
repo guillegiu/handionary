@@ -86,9 +86,9 @@ const Game = () => {
   );
 
   const renderDrawing = () => (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       {/* Header con timer */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4">
         <div className="inline-block bg-white rounded-full px-8 py-4 shadow-lg border border-gray-200">
           <div className="text-4xl font-bold text-red-600 mb-2">
             {localTimeLeft}s
@@ -100,23 +100,26 @@ const Game = () => {
       </div>
 
       {/* Layout principal */}
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Cámara */}
-          <div className="bg-white rounded-lg p-4 shadow-lg border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 text-center">📹 Vista de Cámara</h2>
-            <Camera />
+      <div className="max-w-7xl mx-auto">
+        <div className="flex gap-4">
+          {/* Columna izquierda: Cámara y estado */}
+          <div className="w-80 flex-shrink-0 space-y-4">
+            {/* Cámara pequeña */}
+            <div className="bg-white rounded-lg p-3 shadow-lg border border-gray-200">
+              <h2 className="text-sm font-semibold text-gray-800 mb-2 text-center">📹 Cámara</h2>
+              <Camera />
+            </div>
           </div>
           
-          {/* Canvas */}
-          <div className="bg-white rounded-lg p-4 shadow-lg border border-gray-200">
+          {/* Columna derecha: Canvas principal */}
+          <div className="flex-1 bg-white rounded-lg p-4 shadow-lg border border-gray-200">
             <Canvas />
           </div>
         </div>
 
         {/* Instrucciones */}
-        <div className="mt-6 bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-gray-200 text-center">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">Instrucciones</h3>
+        <div className="mt-4 bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-lg border border-gray-200 text-center">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Instrucciones</h3>
           <p className="text-gray-600">
             Haz pinza con el índice y pulgar para dibujar. ¡Tienes {localTimeLeft} segundos!
           </p>
