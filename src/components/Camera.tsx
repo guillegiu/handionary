@@ -9,6 +9,27 @@ const Camera = () => {
   const [trackingQuality, setTrackingQuality] = useState(0);
   const [handCount, setHandCount] = useState(0);
   const [debugInfo, setDebugInfo] = useState('Inicializando...');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  
+  // Función para verificar disponibilidad de cámara
+  const checkCameraAvailability = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      
+      if (videoDevices.length === 0) {
+        setCameraError('No se encontraron cámaras disponibles');
+        return false;
+      }
+      
+      console.log('Cámaras disponibles:', videoDevices);
+      return true;
+    } catch (error) {
+      console.error('Error verificando cámaras:', error);
+      setCameraError('Error verificando cámaras');
+      return false;
+    }
+  };
   
   const processHands = useCallback((landmarks: any[]) => {
     if (!landmarks || landmarks.length === 0) {
@@ -83,6 +104,15 @@ const Camera = () => {
 
     const initMediaPipe = async () => {
       try {
+        setDebugInfo('Verificando cámara...');
+        
+        // Verificar disponibilidad de cámara primero
+        const hasCamera = await checkCameraAvailability();
+        if (!hasCamera) {
+          setDebugInfo('No hay cámaras disponibles');
+          return;
+        }
+        
         setDebugInfo('Importando MediaPipe...');
         
         // Importar MediaPipe dinámicamente
@@ -180,18 +210,45 @@ const Camera = () => {
         setDebugInfo('Iniciando cámara...');
 
         if (videoRef.current) {
-          camera = new Camera(videoRef.current, {
-            onFrame: async () => {
+          try {
+            camera = new Camera(videoRef.current, {
+              onFrame: async () => {
+                if (videoRef.current) {
+                  await hands.send({ image: videoRef.current });
+                }
+              },
+              width: 320,
+              height: 240
+            });
+            
+            // Intentar iniciar la cámara con manejo de errores
+            await camera.start();
+            setDebugInfo('Cámara iniciada - Esperando manos...');
+            console.log('Cámara iniciada correctamente');
+          } catch (cameraError) {
+            console.error('Error al iniciar la cámara:', cameraError);
+            setDebugInfo(`Error de cámara: ${cameraError.message}`);
+            
+            // Intentar con permisos de usuario
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                  width: 320, 
+                  height: 240,
+                  facingMode: 'user' // Cámara frontal
+                } 
+              });
+              
               if (videoRef.current) {
-                await hands.send({ image: videoRef.current });
+                videoRef.current.srcObject = stream;
+                setDebugInfo('Cámara iniciada con getUserMedia - Esperando manos...');
+                console.log('Cámara iniciada con getUserMedia');
               }
-            },
-            width: 320,
-            height: 240
-          });
-          camera.start();
-          setDebugInfo('Cámara iniciada - Esperando manos...');
-          console.log('Cámara iniciada correctamente');
+            } catch (userMediaError) {
+              console.error('Error con getUserMedia:', userMediaError);
+              setDebugInfo(`Error de permisos: ${userMediaError.message}`);
+            }
+          }
         } else {
           setDebugInfo('Error: videoRef.current es null');
           console.error('videoRef.current es null');
@@ -231,66 +288,75 @@ const Camera = () => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Vista de cámara */}
+    <div className="space-y-3">
+      {/* Vista de cámara compacta */}
       <div className="relative">
         <video
           ref={videoRef}
-          className="w-full h-40 bg-gray-900 rounded-lg"
+          className="w-full h-32 bg-gray-900 rounded-lg"
           autoPlay
           playsInline
           muted
         />
         <canvas
           ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-40 pointer-events-none"
+          className="absolute top-0 left-0 w-full h-32 pointer-events-none"
           width={280}
-          height={200}
+          height={128}
         />
       </div>
 
-      {/* Indicador tipo semáforo */}
-      <div className="bg-gray-50 rounded-lg p-3 shadow-sm border border-gray-200">
-        <h4 className="text-sm font-medium text-gray-700 mb-2 text-center">
-          Estado del Tracking
-        </h4>
-        
-        {/* Semáforo visual */}
-        <div className="flex justify-center items-center space-x-2 mb-2">
-          <div className={`w-4 h-4 rounded-full ${getTrafficLightColor()} transition-colors duration-300`}></div>
-          <span className="text-xs text-gray-600">
-            {getStatusText()}
-          </span>
-        </div>
-
-        {/* Información básica */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
+      {/* Estado de tracking compacto */}
+      <div className="bg-gray-50 rounded-lg p-2 shadow-sm border border-gray-200">
+        {cameraError ? (
           <div className="text-center">
-            <div className="font-medium text-gray-700">Manos</div>
-            <div className={`font-bold ${isHandDetected ? 'text-green-600' : 'text-red-600'}`}>
-              {handCount}/2
+            <div className="text-red-600 text-xs font-medium mb-1">⚠️ Error de Cámara</div>
+            <div className="text-xs text-gray-600">{cameraError}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              Verifica permisos o conecta una cámara
             </div>
           </div>
-          <div className="text-center">
-            <div className="font-medium text-gray-700">Calidad</div>
-            <div className="font-bold text-blue-600">
-              {Math.round(trackingQuality * 100)}%
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700">Tracking</span>
+              <div className="flex items-center space-x-1">
+                <div className={`w-2 h-2 rounded-full ${getTrafficLightColor()} transition-colors duration-300`}></div>
+                <span className="text-xs text-gray-600">
+                  {getStatusText()}
+                </span>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Barra de progreso de calidad */}
-        <div className="mt-2">
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className={`h-2 rounded-full transition-all duration-300 ${
-                trackingQuality > 0.7 ? 'bg-green-500' : 
-                trackingQuality > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${trackingQuality * 100}%` }}
-            ></div>
-          </div>
-        </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="text-center">
+                <div className="text-gray-600">Manos</div>
+                <div className={`font-bold ${isHandDetected ? 'text-green-600' : 'text-red-600'}`}>
+                  {handCount}/2
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-gray-600">Calidad</div>
+                <div className="font-bold text-blue-600">
+                  {Math.round(trackingQuality * 100)}%
+                </div>
+              </div>
+            </div>
+
+            {/* Barra de progreso compacta */}
+            <div className="mt-2">
+              <div className="w-full bg-gray-200 rounded-full h-1">
+                <div 
+                  className={`h-1 rounded-full transition-all duration-300 ${
+                    trackingQuality > 0.7 ? 'bg-green-500' : 
+                    trackingQuality > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${trackingQuality * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Estilos personalizados para el layout de dos columnas */
 .play-layout {
   display: flex !important;

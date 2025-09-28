@@ -3,14 +3,52 @@ import { useGameStore } from '../store/gameStore';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-  const { startGame, selectedTime, setSelectedTime } = useGameStore();
+  const { 
+    startGame, 
+    selectedTime, 
+    setSelectedTime, 
+    players, 
+    addPlayer, 
+    removePlayer, 
+    assignTeams, 
+    setTotalRounds: setStoreTotalRounds,
+    setGamePhase 
+  } = useGameStore();
   const navigate = useNavigate();
 
   const timeOptions = [15, 30, 60];
   const [customTime, setCustomTime] = useState(60);
   const [isCustomMode, setIsCustomMode] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [totalRounds, setTotalRounds] = useState(1);
+
+  const handleAddPlayer = () => {
+    if (playerName.trim() && players.length < 12) {
+      addPlayer(playerName);
+      setPlayerName('');
+    }
+  };
+
+  const handleRemovePlayer = (playerId: string) => {
+    removePlayer(playerId);
+  };
 
   const handleStart = () => {
+    if (players.length < 2) {
+      alert('Necesitas al menos 2 jugadores para empezar');
+      return;
+    }
+    
+    // Asignar equipos aleatoriamente
+    assignTeams();
+    
+    // Configurar rondas
+    setStoreTotalRounds(totalRounds);
+    
+    // Cambiar a fase de setup
+    setGamePhase('setup');
+    
+    // Iniciar el juego
     startGame();
     navigate('/game');
   };
@@ -29,15 +67,99 @@ const Home = () => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddPlayer();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-      <div className="text-center max-w-2xl mx-auto px-6">
+        <div className="text-center max-w-4xl mx-auto px-6">
         <h1 className="text-6xl font-bold text-gray-800 mb-8">
           🎨 pincelHand
         </h1>
+        <div className="bg-blue-500 text-white p-4 rounded-lg mb-4">
+          🧪 Prueba de Tailwind CSS - Si ves esto con fondo azul, Tailwind funciona
+        </div>
         <p className="text-xl text-gray-600 mb-8">
-          ¡Dibuja algo para que tus amigos adivinen!
+          ¡Juego de equipos! Dibuja algo para que tu equipo adivine.
         </p>
+        
+        {/* Gestión de jugadores */}
+        <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            👥 Agregar Jugadores
+          </h2>
+          
+          <div className="flex gap-4 mb-6">
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Nombre del jugador"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              maxLength={20}
+            />
+            <button
+              onClick={handleAddPlayer}
+              disabled={!playerName.trim() || players.length >= 12}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              Agregar
+            </button>
+          </div>
+          
+          {/* Lista de jugadores */}
+          {players.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                Jugadores ({players.length}/12)
+              </h3>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                {players.map((player) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                  >
+                    <span className="text-gray-700 font-medium">{player.name}</span>
+                    <button
+                      onClick={() => handleRemovePlayer(player.id)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Configuración de rondas */}
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">
+              🔄 Número de Rondas
+            </h3>
+            <div className="flex items-center justify-center space-x-4">
+              <label htmlFor="rounds" className="text-gray-600 font-medium">
+                Rondas:
+              </label>
+              <input
+                id="rounds"
+                type="number"
+                min="1"
+                max="5"
+                value={totalRounds}
+                onChange={(e) => setTotalRounds(parseInt(e.target.value) || 1)}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <span className="text-gray-600 font-medium">
+                (cada jugador dibuja {totalRounds} vez{totalRounds > 1 ? 'es' : ''})
+              </span>
+            </div>
+          </div>
+        </div>
         
         {/* Selector de tiempo */}
         <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 mb-8">
@@ -123,12 +245,17 @@ const Home = () => {
           Haz pinza con el índice y pulgar para empezar a dibujar.
         </p>
         
-        <button
-          onClick={handleStart}
-          className="px-12 py-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl font-bold rounded-full shadow-lg hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200"
-        >
-          🚀 START
-        </button>
+            <button
+              onClick={handleStart}
+              disabled={players.length < 2}
+              className={`px-12 py-6 text-white text-2xl font-bold rounded-full shadow-lg transform transition-all duration-200 ${
+                players.length >= 2
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 hover:scale-105'
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {players.length >= 2 ? '🚀 START' : '👥 Necesitas al menos 2 jugadores'}
+            </button>
       </div>
     </div>
   );

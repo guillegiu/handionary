@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import Camera from './Camera';
 import Canvas from './Canvas';
@@ -10,6 +10,7 @@ const Game = () => {
     countdownNumber, 
     canDraw,
     selectedTime,
+    finalDrawing,
     setGamePhase, 
     setTimeLeft, 
     setCountdownNumber, 
@@ -19,6 +20,14 @@ const Game = () => {
 
   const [localCountdown, setLocalCountdown] = useState(3);
   const [localTimeLeft, setLocalTimeLeft] = useState(selectedTime);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const gameIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Actualizar localTimeLeft cuando cambie selectedTime
+  useEffect(() => {
+    console.log('selectedTime cambió a:', selectedTime);
+    setLocalTimeLeft(selectedTime);
+  }, [selectedTime]);
 
   // Efecto para manejar el countdown de 3-2-1
   useEffect(() => {
@@ -26,45 +35,84 @@ const Game = () => {
       console.log('Iniciando countdown');
       setLocalCountdown(3);
       
-      const interval = setInterval(() => {
+      // Limpiar interval anterior si existe
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      
+      countdownIntervalRef.current = setInterval(() => {
         setLocalCountdown(prev => {
           console.log('Countdown actual:', prev);
           if (prev <= 1) {
             console.log('Terminando countdown, pasando a drawing');
-            setGamePhase('drawing');
-            setCanDraw(true);
-            setLocalTimeLeft(selectedTime);
+            // Usar setTimeout para evitar setState durante render
+            setTimeout(() => {
+              setGamePhase('drawing');
+              setCanDraw(true);
+              setLocalTimeLeft(selectedTime);
+            }, 0);
             return 3;
           }
           return prev - 1;
         });
       }, 1000);
-
-      return () => clearInterval(interval);
+    } else {
+      // Limpiar interval si no estamos en countdown
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
     }
-  }, [gamePhase, setGamePhase, setCanDraw, selectedTime]);
 
-  // Efecto para manejar el timer de 60 segundos
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    };
+  }, [gamePhase, selectedTime]);
+
+  // Efecto para manejar el timer de dibujo
   useEffect(() => {
     if (gamePhase === 'drawing') {
       console.log('Iniciando timer de dibujo');
       
-      const interval = setInterval(() => {
+      // Limpiar interval anterior si existe
+      if (gameIntervalRef.current) {
+        clearInterval(gameIntervalRef.current);
+      }
+      
+      gameIntervalRef.current = setInterval(() => {
         setLocalTimeLeft(prev => {
-          console.log('Timer actual:', prev);
+          console.log('Timer actual:', prev, 'de', selectedTime, 'segundos totales');
           if (prev <= 1) {
             console.log('Terminando juego, pasando a finished');
-            setGamePhase('finished');
+            // Primero deshabilitar el dibujo inmediatamente
             setCanDraw(false);
+            // Luego cambiar la fase del juego
+            setTimeout(() => {
+              setGamePhase('finished');
+            }, 0);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-
-      return () => clearInterval(interval);
+    } else {
+      // Limpiar interval si no estamos en drawing
+      if (gameIntervalRef.current) {
+        clearInterval(gameIntervalRef.current);
+        gameIntervalRef.current = null;
+      }
     }
-  }, [gamePhase, setGamePhase, setCanDraw]);
+
+    return () => {
+      if (gameIntervalRef.current) {
+        clearInterval(gameIntervalRef.current);
+        gameIntervalRef.current = null;
+      }
+    };
+  }, [gamePhase]);
 
   const handleReset = () => {
     resetGame();
@@ -130,7 +178,7 @@ const Game = () => {
 
   const renderFinished = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-      <div className="text-center max-w-4xl mx-auto p-6">
+      <div className="text-center max-w-6xl mx-auto p-6">
         <h1 className="text-5xl font-bold text-gray-800 mb-8">
           🎉 ¡Tiempo terminado!
         </h1>
@@ -138,25 +186,51 @@ const Game = () => {
           Aquí está tu dibujo final. ¿Qué dibujaste?
         </p>
         
-        {/* Mostrar el canvas final */}
-        <div className="bg-white rounded-lg p-4 shadow-lg border border-gray-200 mb-8 inline-block">
-          <Canvas />
-        </div>
-        
-        <div className="space-x-4">
-          <button
-            onClick={handleReset}
-            className="px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xl font-semibold rounded-full shadow-lg hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200"
-          >
-            🔄 Jugar de nuevo
-          </button>
+        {/* Mostrar el dibujo final guardado */}
+        <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-200 mb-8">
+          {/* Debug temporal */}
+          <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-sm">
+            <strong>Debug:</strong> finalDrawing = {finalDrawing ? `Presente (${finalDrawing.length} caracteres)` : 'null/undefined'}
+            <br />
+            <strong>Tipo:</strong> {typeof finalDrawing}
+            <br />
+            <strong>Primeros 50 chars:</strong> {finalDrawing ? finalDrawing.substring(0, 50) + '...' : 'N/A'}
+          </div>
+          
+          {finalDrawing ? (
+            <div className="flex justify-center">
+              <img 
+                src={finalDrawing} 
+                alt="Dibujo final" 
+                className="max-w-full max-h-96 rounded-lg shadow-md"
+                style={{ maxWidth: '800px', maxHeight: '600px' }}
+                onLoad={() => console.log('Imagen cargada correctamente')}
+                onError={(e) => console.error('Error cargando imagen:', e)}
+              />
+            </div>
+          ) : (
+            <div className="flex justify-center items-center h-96 bg-gray-100 rounded-lg">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🎨</div>
+                <p className="text-gray-600 text-lg">No se detectó ningún dibujo</p>
+                <p className="text-gray-500 text-sm">Intenta dibujar algo la próxima vez</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 
   // Debug: mostrar el estado actual
-  console.log('Game state:', { gamePhase, timeLeft, countdownNumber, canDraw });
+  console.log('Game state:', { 
+    gamePhase, 
+    timeLeft, 
+    countdownNumber, 
+    canDraw, 
+    finalDrawing: finalDrawing ? `Presente (${finalDrawing.length} chars)` : 'Ausente',
+    finalDrawingType: typeof finalDrawing
+  });
 
   // Renderizar según la fase del juego
   switch (gamePhase) {
